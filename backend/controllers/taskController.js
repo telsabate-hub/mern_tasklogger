@@ -1,26 +1,63 @@
-const getTasks = (req, res) => {
-    const tasks = [
-        {
-            id: 1, 
-            text: "Task 1", 
-            date: new Date().toLocaleDateString()
-        }
-    ];
+const asyncHandler = require('express-async-handler');
+
+const Task = require('../models/taskModel');
+
+const getTasks = asyncHandler( async (req, res) => {
+    /*const tasks = {
+        user1: [
+            {
+                id: 1, 
+                text: "Task 1", 
+                date: new Date().toLocaleDateString(),
+                isComplete: false,
+            }
+        ]
+    };*/
+    const tasks = await Task.find();
 
     res.status(200).json( tasks );
-}
+});
 
-const setTask = (req, res) => {
-    res.status(200).send('set task');
-}
+const setTask = asyncHandler( async (req, res) => {
+    if(!req.body.text){
+        res.status(400)
+        throw new Error('Please add a text field');
+    }
 
-const updateTask = (req, res) => {
-    res.status(200).send(`update task ${req.params.id}`);
-}
+    const task = await Task.create({
+        text: req.body.text
+    });
 
-const deleteTask = (req, res) => {
-    res.status(200).send(`delete task ${req.params.id}`);
-}
+    res.status(200).json(task);
+});
+
+const updateTask = asyncHandler( async (req, res) => {
+    const task = await Task.findById(req.params.id);
+    
+    if( !task ){
+        res.status(400)
+        throw new Error('Task not found');
+    }
+
+    const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, {
+        new: true
+    });
+
+    res.status(200).json(task);
+});
+
+const deleteTask = asyncHandler( async (req, res) => {
+    const task = await Task.findById(req.params.id);
+    
+    if( !task ){
+        res.status(400)
+        throw new Error('Task not found');
+    }
+
+    await task.remove();
+
+    res.status(200).json({ id: req.params.id });
+});
 
 module.exports = {
     getTasks,
